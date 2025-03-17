@@ -3,7 +3,7 @@
 	<link rel="stylesheet" type="text/css" href="css/litegraph.css">
 	<script type="text/javascript" src="js/litegraph.js"></script>
   <script type="text/javascript" src="js/nodes.js"></script>
-  <script type="text/javascript" src="js/utils.js"></script>
+  <script type="text/javascript" src="js/graph_utils.js"></script>
   <script type="text/javascript" src="js/sse.js"></script>
 </head>
 <body style='width:100%; height:100%'>
@@ -14,59 +14,23 @@
 <button id="saveToFileButton"></button>
 <script>
 
-function resizeCanvas() {
-    let canvas = document.getElementById("mycanvas");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    if (canvas.graphcanvas) {
-        canvas.graphcanvas.resize(); // Ensure LiteGraph updates its size
-    }
-}
 var graph = createGraph();
 resizeCanvas();
-
-function createGraph(){
-  const canvasElement = document.createElement("canvas");
-  canvasElement.id = "mycanvas";
-  canvasElement.width = 1024;
-  canvasElement.height = 720;
-  canvasElement.style.border = "1px solid";
-  document.body.appendChild(canvasElement);
-  var graph = new LGraph();
-  var canvas = new LGraphCanvas("#mycanvas", graph);
-  return graph;
-}
-
-var button = document.getElementById("runbutton");
-button.innerHTML = "Send Graph Data";
-button.addEventListener("click", sendGraphData);
-
-// var node_const = LiteGraph.createNode("basic/const");
-// node_const.pos = [200,200];
-// graph.add(node_const);
-// node_const.setValue(4.5);
-//
-// var node_watch = LiteGraph.createNode("basic/watch");
-// node_watch.pos = [700,200];
-// graph.add(node_watch);
-//
-// node_const.connect(0, node_watch, 0 );
 loadGraph();
-// graph.start();
 
-    async function sendGraphData() {
-        const jsonData = graph.serialize();
-        console.log("Sending graph data:", jsonData);
+async function sendGraphData() {
+    const jsonData = graph.serialize();
+    console.log("Sending graph data:", jsonData);
 
-        let response = await fetch('/process_graph', {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(jsonData)
-        });
+    let response = await fetch('/process_graph', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(jsonData)
+    });
 
-        let result = await response.json();
-        console.log("Server Response:", result);
-    }
+    let result = await response.json();
+    console.log("Server Response:", result);
+}
 function saveGraph() {
     const data = graph.serialize();
     localStorage.setItem("myGraph", JSON.stringify(data)); // Save to local storage or send to a server
@@ -92,6 +56,9 @@ function saveGraphToFile() {
   graph.save();
 }
 
+var button = document.getElementById("runbutton");
+button.innerHTML = "Send Graph Data";
+button.addEventListener("click", sendGraphData);
 
 var savebutton = document.getElementById("savebutton");
 savebutton.innerHTML = "Save Graph";
