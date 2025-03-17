@@ -3,12 +3,13 @@
 	<link rel="stylesheet" type="text/css" href="litegraph.css">
 	<script type="text/javascript" src="litegraph.js"></script>
   <script type="text/javascript" src="nodes.js"></script>
+  <script type="text/javascript" src="utils.js"></script>
 </head>
 <body style='width:100%; height:100%'>
 <button id="runbutton"></button>
 <button id="savebutton"></button>
 <button id="loadbutton"></button>
-<canvas id='mycanvas' width='1024' height='720' style='border: 1px solid'></canvas>
+<button id="loadFromFileButton"></button>
 <script>
 
 function resizeCanvas() {
@@ -19,29 +20,38 @@ function resizeCanvas() {
         canvas.graphcanvas.resize(); // Ensure LiteGraph updates its size
     }
 }
+var graph = createGraph();
 resizeCanvas();
 
+function createGraph(){
+  const canvasElement = document.createElement("canvas");
+  canvasElement.id = "mycanvas";
+  canvasElement.width = 1024;
+  canvasElement.height = 720;
+  canvasElement.style.border = "1px solid";
+  document.body.appendChild(canvasElement);
+  var graph = new LGraph();
+  var canvas = new LGraphCanvas("#mycanvas", graph);
+  return graph;
+}
 
 var button = document.getElementById("runbutton");
 button.innerHTML = "Send Graph Data";
 button.addEventListener("click", sendGraphData);
 
-var graph = new LGraph();
 
-var canvas = new LGraphCanvas("#mycanvas", graph);
-
-var node_const = LiteGraph.createNode("basic/const");
-node_const.pos = [200,200];
-graph.add(node_const);
-node_const.setValue(4.5);
-
-var node_watch = LiteGraph.createNode("basic/watch");
-node_watch.pos = [700,200];
-graph.add(node_watch);
-
-node_const.connect(0, node_watch, 0 );
-
-graph.start()
+// var node_const = LiteGraph.createNode("basic/const");
+// node_const.pos = [200,200];
+// graph.add(node_const);
+// node_const.setValue(4.5);
+//
+// var node_watch = LiteGraph.createNode("basic/watch");
+// node_watch.pos = [700,200];
+// graph.add(node_watch);
+//
+// node_const.connect(0, node_watch, 0 );
+loadGraph();
+// graph.start();
 
     async function sendGraphData() {
         const jsonData = graph.serialize();
@@ -70,6 +80,15 @@ function loadGraph() {
     } else {
         console.log("No saved graph found.");
     }
+    graph.start();
+}
+
+function loadGraphFromFile() {
+  var canvas = document.getElementById("mycanvas");
+  canvas.remove();
+  graph = createGraph();
+  graph.load();
+  graph.start();
 }
 
 
@@ -80,6 +99,10 @@ savebutton.addEventListener("click", saveGraph);
 var loadbutton = document.getElementById("loadbutton");
 loadbutton.innerHTML = "Load Graph";
 loadbutton.addEventListener("click", loadGraph);
+
+var loadFromFileButton = document.getElementById("loadFromFileButton");
+loadFromFileButton.innerHTML = "Load Graph From File";
+loadFromFileButton.addEventListener("click", loadGraphFromFile);
 
 </script>
 </body>
