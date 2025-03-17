@@ -1,15 +1,16 @@
 <html>
 <head>
-	<link rel="stylesheet" type="text/css" href="litegraph.css">
-	<script type="text/javascript" src="litegraph.js"></script>
-  <script type="text/javascript" src="nodes.js"></script>
-  <script type="text/javascript" src="utils.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/litegraph.css">
+	<script type="text/javascript" src="js/litegraph.js"></script>
+  <script type="text/javascript" src="js/nodes.js"></script>
+  <script type="text/javascript" src="js/utils.js"></script>
 </head>
 <body style='width:100%; height:100%'>
 <button id="runbutton"></button>
 <button id="savebutton"></button>
 <button id="loadbutton"></button>
 <button id="loadFromFileButton"></button>
+<button id="saveToFileButton"></button>
 <script>
 
 function resizeCanvas() {
@@ -84,11 +85,11 @@ function loadGraph() {
 }
 
 function loadGraphFromFile() {
-  var canvas = document.getElementById("mycanvas");
-  canvas.remove();
-  graph = createGraph();
   graph.load();
-  graph.start();
+}
+
+function saveGraphToFile() {
+  graph.save();
 }
 
 
@@ -103,6 +104,10 @@ loadbutton.addEventListener("click", loadGraph);
 var loadFromFileButton = document.getElementById("loadFromFileButton");
 loadFromFileButton.innerHTML = "Load Graph From File";
 loadFromFileButton.addEventListener("click", loadGraphFromFile);
+
+var saveToFileButton = document.getElementById("saveToFileButton");
+saveToFileButton.innerHTML = "Save Graph To File";
+saveToFileButton.addEventListener("click", saveGraphToFile);
 
 </script>
 </body>
