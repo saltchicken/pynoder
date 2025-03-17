@@ -3,6 +3,11 @@ import asyncio
 import json
 from pprint import pprint
 
+import inspect
+import sys
+import nodes
+print(dir(nodes))
+
 class Node:
     def __init__(self, node):
         self.flags = node.get('flags', None)
@@ -21,6 +26,11 @@ async def process_graph(request):
     nodes = [Node(node) for node in data['nodes']]
     for node in nodes:
         pprint(node.__dict__)
+
+
+    custom_classes = [{cls_name: cls_obj} for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes']) if inspect.isclass(cls_obj)]
+    print(custom_classes)
+
     return web.json_response({"status": "success", "message": "Graph data received."})
 
 async def sse_handler(request):
