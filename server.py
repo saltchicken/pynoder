@@ -1,4 +1,5 @@
 from aiohttp import web
+import asyncio
 import json
 from pprint import pprint
 
@@ -22,8 +23,42 @@ async def process_graph(request):
         pprint(node.__dict__)
     return web.json_response({"status": "success", "message": "Graph data received."})
 
+async def sse_handler(request):
+    response = web.StreamResponse(
+        status=200,
+        reason="OK",
+        headers={
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
+
+    await response.prepare(request)
+
+    try:
+        counter = 0
+        while True:
+            counter += 1
+            message = f"data: Message {counter} from server\n\n"
+            await response.write(message.encode("utf-8"))
+            await asyncio.sleep(10)  # Send an update every second
+    except (asyncio.CancelledError, ConnectionResetError, web.GracefulExit):
+        print("Client disconnected")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+    finally:
+        try:
+            await response.write_eof()  # Ensure the response is properly closed
+        except Exception:
+            pass  # Ignore errors when closing the response
+
+    return response
+
+app.router.add_get('/events', sse_handler)
 app.router.add_post('/process_graph', process_graph)
 app.router.add_static('/', path='.', show_index=True)  # Serve frontend files
+
 
 web.run_app(app, host="0.0.0.0", port=8080)
 
