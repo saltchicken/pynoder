@@ -6,7 +6,6 @@ from pprint import pprint
 import inspect
 import sys
 import nodes
-print(dir(nodes))
 
 class Node:
     def __init__(self, node):
@@ -27,11 +26,20 @@ async def process_graph(request):
     for node in nodes:
         pprint(node.__dict__)
 
-
     custom_classes = [{cls_name: cls_obj} for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes']) if inspect.isclass(cls_obj)]
     print(custom_classes)
 
     return web.json_response({"status": "success", "message": "Graph data received."})
+
+async def custom_nodes_handler(request):
+    """Handles POST requests for custom nodes."""
+    # data = await request.json()
+    #
+
+
+    custom_classes = [{"name":cls_name} for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes']) if inspect.isclass(cls_obj)]
+
+    return web.json_response({"status": "success", "nodes": custom_classes})
 
 async def sse_handler(request):
     response = web.StreamResponse(
@@ -67,6 +75,7 @@ async def sse_handler(request):
 
 app.router.add_get('/events', sse_handler)
 app.router.add_post('/process_graph', process_graph)
+app.router.add_post('/custom_nodes', custom_nodes_handler)
 app.router.add_static('/', path='.', show_index=True)  # Serve frontend files
 
 
