@@ -24,6 +24,7 @@ async function registerNode(node) {
   // }
 
   console.log("Registering node:", node['name'])
+  // TODO: More declarative type instead of just node['name']
   LiteGraph.registerNodeType(node['name'], customNode );
 
 }
