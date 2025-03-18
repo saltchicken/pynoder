@@ -22,12 +22,16 @@ app = web.Application()
 async def process_graph(request):
     """Handles POST requests from the frontend with graph data."""
     data = await request.json()
+    custom_classes = [{cls_name: cls_obj} for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes']) if inspect.isclass(cls_obj)]
+
     nodes = [Node(node) for node in data['nodes']]
     for node in nodes:
-        pprint(node.__dict__)
+        # pprint(node.__dict__)
+        for custom_class in custom_classes:
+            if custom_class.get(node.type, None):
+                node_class = custom_class[node.type]
+                print(node_class)
 
-    # custom_classes = [{cls_name: cls_obj} for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes']) if inspect.isclass(cls_obj)]
-    # print(custom_classes)
 
     return web.json_response({"status": "success", "message": "Graph data received."})
 
