@@ -1,51 +1,27 @@
-//node constructor class
-function MyAddNode()
-{
-  this.addInput("A","number");
-  this.addInput("B","number");
-  this.addOutput("A+B","number");
-  this.properties = { precision: 1 };
-}
-
-//name to show
-MyAddNode.title = "Sum";
-
-//function to call when the node is executed
-MyAddNode.prototype.onExecute = function()
-{
-  var A = this.getInputData(0);
-  if( A === undefined )
-    A = 0;
-  var B = this.getInputData(1);
-  if( B === undefined )
-    B = 0;
-  this.setOutputData( 0, A + B );
-}
-
-//register in the system
-LiteGraph.registerNodeType("basic/sum", MyAddNode );
-
 async function registerNode(node) {
   function customNode() {
-    this.addInput("A","number");
-    this.addInput("B","number");
-    this.addOutput("A+B","number");
-    this.properties = { precision: 1 };
+    for (let input of node['inputs']) {
+      this.addInput(input['name'], input['type']);
+    }
+    for (let output of node['outputs']) {
+      this.addOutput(output['name'], output['type']);
+    }
+    // this.properties = { precision: 1 };
   }
 
   customNode.title = node['name'];
   // customNode.prototype.onExecute = node['onExecute'];
 
-  customNode.prototype.onExecute = function()
-  {
-    var A = this.getInputData(0);
-    if( A === undefined )
-      A = 0;
-    var B = this.getInputData(1);
-    if( B === undefined )
-      B = 0;
-    this.setOutputData( 0, A + B );
-  }
+  // customNode.prototype.onExecute = function()
+  // {
+  //   // var A = this.getInputData(0);
+  //   // if( A === undefined )
+  //   //   A = 0;
+  //   // var B = this.getInputData(1);
+  //   // if( B === undefined )
+  //   //   B = 0;
+  //   // this.setOutputData( 0, A + B );
+  // }
 
   console.log("Registering node:", node['name'])
   LiteGraph.registerNodeType(node['name'], customNode );

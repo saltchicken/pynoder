@@ -26,8 +26,8 @@ async def process_graph(request):
     for node in nodes:
         pprint(node.__dict__)
 
-    custom_classes = [{cls_name: cls_obj} for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes']) if inspect.isclass(cls_obj)]
-    print(custom_classes)
+    # custom_classes = [{cls_name: cls_obj} for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes']) if inspect.isclass(cls_obj)]
+    # print(custom_classes)
 
     return web.json_response({"status": "success", "message": "Graph data received."})
 
@@ -37,8 +37,16 @@ async def custom_nodes_handler(request):
     #
 
 
-    custom_classes = [{"name":cls_name} for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes']) if inspect.isclass(cls_obj)]
-
+    custom_classes = [
+        {
+            "name": cls_name,
+            "inputs": getattr(cls_obj, 'inputs', None),  # Will be None if inputs is an instance attribute
+            "outputs": getattr(cls_obj, 'outputs', None)  # Will be None if outputs is an instance attribute
+        }
+        for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes'])
+        if inspect.isclass(cls_obj)
+    ]
+    print(custom_classes)
     return web.json_response({"status": "success", "nodes": custom_classes})
 
 async def sse_handler(request):

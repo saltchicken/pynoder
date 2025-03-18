@@ -1,5 +1,8 @@
 class Foo:
-    pass
+    inputs = ({"name": "FooInput", "type": "STRING"},)
+    outputs = ({"name": "FooOutput", "type": "STRING"},)
 
 class Bar:
-    pass
+    inputs = ({"name": "BarInput", "type": "STRING"},)
+    outputs = ({"name": "BarOutput", "type": "STRING"},)
+
