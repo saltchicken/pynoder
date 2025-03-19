@@ -7,30 +7,65 @@ import inspect
 import sys
 import nodes
 
+custom_classes = [
+    {
+        "name": cls_name,
+        "inputs": getattr(cls_obj, 'inputs', None),  # Will be None if inputs is an instance attribute
+        "outputs": getattr(cls_obj, 'outputs', None),  # Will be None if outputs is an instance attribute
+        "class": cls_obj
+    }
+    for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes'])
+    if inspect.isclass(cls_obj)
+]
+
 class Node:
     def __init__(self, node):
+        self.name = node.get('name', None)
         self.flags = node.get('flags', None)
         self.mode = node.get('mode', None)
         self.order = node.get('order', None)
-        self.inputs = node.get('inputs', None)
+        # self.inputs = node.get('inputs', None)
         self.outputs = node.get('outputs', None)
         self.properties = node.get('properties', None)
         self.type = node.get('type', None)
+
+        self.inputs = []
+        self.output = None
+        self.func = node.process
+
+    def execute(self):
+        print(f"Executing node: {self.name}")
+        input_values = [node.output for node in self.inputs]
+        self.output = self.func(*input_values)
+        return self.output
+
+
+class Graph:
+    def __init__(self):
+        self.nodes = {}
+
+    def add_node(self, node_class):
+        self.nodes[node_class.name] = node_class
+
+    def connection(self, from_node, to_node):
+        self.nodes[to_node].inputs.append(self.nodes[from_node])
 
 app = web.Application()
 
 async def process_graph(request):
     """Handles POST requests from the frontend with graph data."""
     data = await request.json()
-    custom_classes = [{cls_name: cls_obj} for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes']) if inspect.isclass(cls_obj)]
 
-    nodes = [Node(node) for node in data['nodes']]
-    for node in nodes:
+    for node in data['nodes']:
         # pprint(node.__dict__)
         for custom_class in custom_classes:
-            if custom_class.get(node.type, None):
-                node_class = custom_class[node.type]
+            if custom_class['name'] == node['type']:
+                node_class = custom_class['class']
                 print(node_class)
+            # if custom_class.get(node['type'], None):
+            #     node_class = custom_class[node['type']]
+            #     print(node_class)
+
 
 
     return web.json_response({"status": "success", "message": "Graph data received."})
@@ -41,17 +76,9 @@ async def custom_nodes_handler(request):
     #
 
 
-    custom_classes = [
-        {
-            "name": cls_name,
-            "inputs": getattr(cls_obj, 'inputs', None),  # Will be None if inputs is an instance attribute
-            "outputs": getattr(cls_obj, 'outputs', None)  # Will be None if outputs is an instance attribute
-        }
-        for cls_name, cls_obj in inspect.getmembers(sys.modules['nodes'])
-        if inspect.isclass(cls_obj)
-    ]
-    print(custom_classes)
-    return web.json_response({"status": "success", "nodes": custom_classes})
+    # print(custom_classes)
+    custom_classes_without_class = [{k: v for k, v in d.items() if k != 'class'} for d in custom_classes]
+    return web.json_response({"status": "success", "nodes": custom_classes_without_class})
 
 async def sse_handler(request):
     response = web.StreamResponse(
