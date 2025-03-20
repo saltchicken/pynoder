@@ -71,37 +71,35 @@ class Graph:
         try:
             while True:
                 nodes = await self.node_queue.get()
-                nodes_for_deleteion = []
+                nodes_for_deletion = set()
+
                 for node in nodes:
-                    # pprint(node.__dict__)
+                    node_key = f"{node['id']}:{node['properties']['uniqueID']}"
+
+                    # Check if node type exists in custom_classes
                     for custom_class in custom_classes:
                         if custom_class['name'] == node['type']:
                             node_class = custom_class['class']
-                            if str(node['id']) + ":" + node['properties']['uniqueID'] in self.nodes:
-                                print("Node already exists")
-                                continue
-                            else:
+
+                            if node_key not in self.nodes:
                                 graph_node = Node(node, node_class)
                                 self.add_node(graph_node)
-                for inserted_node in self.nodes.keys():
-                    still_exists = False
-                    for node in nodes:
-                        if inserted_node == str(node['id']) + ":" + node['properties']['uniqueID']:
-                            still_exists = True
-                            break
-                    if not still_exists:
-                        print("Node does not exist")
-                        nodes_for_deleteion.append(inserted_node)
-                    # if custom_class.get(node['type'], None):
-                    #     node_class = custom_class[node['type']]
-                    #     print(node_class)
-                for node in nodes_for_deleteion:
-                    del self.nodes[node]
+                            break  # No need to check further once match is found
+
+                # Identify nodes that should be deleted
+                current_keys = set(self.nodes.keys())
+                new_keys = {f"{node['id']}:{node['properties']['uniqueID']}" for node in nodes}
+                nodes_for_deletion = current_keys - new_keys  # Find obsolete nodes
+
+                for node_key in nodes_for_deletion:
+                    print(f"Removing node: {node_key}")
+                    del self.nodes[node_key]
+
                 print(self.nodes)
                 self.node_queue.task_done()
+
         except asyncio.CancelledError:
             print("Process Queue, Task cancelled")
-
 
 async def custom_nodes_handler(request):
     """Handles POST requests for custom nodes."""
