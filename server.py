@@ -21,7 +21,8 @@ custom_classes = [
 
 class Node:
     def __init__(self, node, custom_class):
-        self.id = id(self)
+        self.id = node.get('id', None)
+        self.unique_id = node['properties'].get('uniqueID', None)
         self.name = node.get('type', None)
         self.flags = node.get('flags', None)
         self.mode = node.get('mode', None)
@@ -53,7 +54,7 @@ class Graph:
         return self.process_task
 
     def add_node(self, node_class):
-        self.nodes[node_class.name + str(node_class.order)] = node_class
+        self.nodes[str(node_class.id) + ":" + node_class.unique_id] = node_class
 
     def connection(self, from_node, to_node):
         self.nodes[to_node].inputs.append(self.nodes[from_node])
@@ -70,21 +71,32 @@ class Graph:
         try:
             while True:
                 nodes = await self.node_queue.get()
+                nodes_for_deleteion = []
                 for node in nodes:
                     # pprint(node.__dict__)
                     for custom_class in custom_classes:
                         if custom_class['name'] == node['type']:
                             node_class = custom_class['class']
-                            if node['type'] + str(node['order']) in self.nodes:
+                            if str(node['id']) + ":" + node['properties']['uniqueID'] in self.nodes:
                                 print("Node already exists")
                                 continue
                             else:
                                 graph_node = Node(node, node_class)
-                                print(graph_node)
                                 self.add_node(graph_node)
-                        # if custom_class.get(node['type'], None):
-                        #     node_class = custom_class[node['type']]
-                        #     print(node_class)
+                for inserted_node in self.nodes.keys():
+                    still_exists = False
+                    for node in nodes:
+                        if inserted_node == str(node['id']) + ":" + node['properties']['uniqueID']:
+                            still_exists = True
+                            break
+                    if not still_exists:
+                        print("Node does not exist")
+                        nodes_for_deleteion.append(inserted_node)
+                    # if custom_class.get(node['type'], None):
+                    #     node_class = custom_class[node['type']]
+                    #     print(node_class)
+                for node in nodes_for_deleteion:
+                    del self.nodes[node]
                 print(self.nodes)
                 self.node_queue.task_done()
         except asyncio.CancelledError:

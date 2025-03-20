@@ -1,3 +1,12 @@
+if (typeof crypto.randomUUID !== 'function') {
+  crypto.randomUUID = function() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0,
+        v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+}
 async function registerNode(node) {
   function customNode() {
     for (let input of node['inputs']) {
@@ -6,10 +15,13 @@ async function registerNode(node) {
     for (let output of node['outputs']) {
       this.addOutput(output['name'], output['type']);
     }
+    this.properties = {uniqueID: crypto.randomUUID()}
+    this.title = "Oh my"
     // this.properties = { precision: 1 };
   }
 
-  customNode.title = node['name'];
+  // customNode.title = node['name'];
+  // customNode.uniqueID = crypto.randomUUID();
   // customNode.prototype.onExecute = node['onExecute'];
 
   // customNode.prototype.onExecute = function()
