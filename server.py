@@ -18,20 +18,22 @@ custom_classes = [
     if inspect.isclass(cls_obj)
 ]
 
+
 class Node:
-    def __init__(self, node):
-        self.name = node.get('name', None)
+    def __init__(self, node, custom_class):
+        self.id = id(self)
+        self.name = node.get('type', None)
         self.flags = node.get('flags', None)
         self.mode = node.get('mode', None)
         self.order = node.get('order', None)
         # self.inputs = node.get('inputs', None)
         self.outputs = node.get('outputs', None)
         self.properties = node.get('properties', None)
-        self.type = node.get('type', None)
+        self.custom_class = custom_class
 
         self.inputs = []
         self.output = None
-        self.func = node.process
+        # self.func = node.process
 
     def execute(self):
         print(f"Executing node: {self.name}")
@@ -43,32 +45,51 @@ class Node:
 class Graph:
     def __init__(self):
         self.nodes = {}
+        self.node_queue = asyncio.Queue()
+        self.process_task = None
+        
+    async def start_processing(self):
+        self.process_task = asyncio.create_task(self.process_nodes())
+        return self.process_task
 
     def add_node(self, node_class):
-        self.nodes[node_class.name] = node_class
+        self.nodes[node_class.name + str(node_class.order)] = node_class
 
     def connection(self, from_node, to_node):
         self.nodes[to_node].inputs.append(self.nodes[from_node])
 
-app = web.Application()
 
-async def process_graph(request):
-    """Handles POST requests from the frontend with graph data."""
-    data = await request.json()
+    async def process_graph(self, request):
+        """Handles POST requests from the frontend with graph data."""
+        data = await request.json()
 
-    for node in data['nodes']:
-        # pprint(node.__dict__)
-        for custom_class in custom_classes:
-            if custom_class['name'] == node['type']:
-                node_class = custom_class['class']
-                print(node_class)
-            # if custom_class.get(node['type'], None):
-            #     node_class = custom_class[node['type']]
-            #     print(node_class)
+        self.node_queue.put_nowait(data['nodes'])
+        return web.json_response({"status": "success", "message": "Graph data received."})
 
+    async def process_nodes(self):
+        try:
+            while True:
+                nodes = await self.node_queue.get()
+                for node in nodes:
+                    # pprint(node.__dict__)
+                    for custom_class in custom_classes:
+                        if custom_class['name'] == node['type']:
+                            node_class = custom_class['class']
+                            if node['type'] + str(node['order']) in self.nodes:
+                                print("Node already exists")
+                                continue
+                            else:
+                                graph_node = Node(node, node_class)
+                                print(graph_node)
+                                self.add_node(graph_node)
+                        # if custom_class.get(node['type'], None):
+                        #     node_class = custom_class[node['type']]
+                        #     print(node_class)
+                print(self.nodes)
+                self.node_queue.task_done()
+        except asyncio.CancelledError:
+            print("Process Queue, Task cancelled")
 
-
-    return web.json_response({"status": "success", "message": "Graph data received."})
 
 async def custom_nodes_handler(request):
     """Handles POST requests for custom nodes."""
@@ -112,11 +133,18 @@ async def sse_handler(request):
 
     return response
 
+async def start_background_tasks(app):
+    app['process_task'] = await graph.start_processing()
+
+
+graph = Graph()
+app = web.Application()
 app.router.add_get('/events', sse_handler)
-app.router.add_post('/process_graph', process_graph)
+app.router.add_post('/process_graph', graph.process_graph)
 app.router.add_post('/custom_nodes', custom_nodes_handler)
 app.router.add_static('/', path='.', show_index=True)  # Serve frontend files
 
+app.on_startup.append(start_background_tasks)
 
 web.run_app(app, host="0.0.0.0", port=8080)
 
