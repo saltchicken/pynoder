@@ -19,9 +19,16 @@ class Bar:
     def __init__(self):
         self.instantiated = True
         # print("Bar initialized")
+        self.output_results = []
 
     def run(self, x, y):
-        print(f"X: {x} Y: {y}")
+        self.output_results = []
+        if x:
+            reversed_x = x[::-1]
+        if y:
+            reversed_y = y[::-1]
+        print(reversed_x)
+        self.output_results.append(reversed_x)
+
         # print("Bar running")
-        return "BarOutput"
 
