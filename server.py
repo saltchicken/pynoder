@@ -102,13 +102,28 @@ class Graph:
                     print(f"Removing node: {node_key}")
                     del self.nodes[node_key]
 
-                print(self.nodes)
+                # print(self.nodes)
                 for node in self.nodes.values():
-                    print(node.inputs)
+                    print(f"Order: {node.order} Inputs: {node.inputs} Outputs: {node.outputs}")
+                    if node.inputs is None:
+                        continue
+                    for input in node.inputs:
+                        connection = self.search_nodes_for_output(input['link'])
                 self.node_queue.task_done()
 
         except asyncio.CancelledError:
             print("Process Queue, Task cancelled")
+
+    def search_nodes_for_output(self, link):
+        for node in self.nodes.values():
+            for output_links in node.outputs:
+                if output_links['links'] is None:
+                    continue
+                for output_link in output_links['links']:
+                    if output_link == link:
+                        print(f"Slot Index: {output_links['slot_index']}")
+                        return node
+        return None
 
 async def custom_nodes_handler(request):
     """Handles POST requests for custom nodes."""
