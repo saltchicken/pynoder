@@ -39,11 +39,18 @@ class Node:
         # self.output = None
         # self.func = node.process
 
-    def execute(self):
-        print(f"Executing node: {self.name}")
-        input_values = [node.output for node in self.inputs]
-        self.output = self.func(*input_values)
-        return self.output
+    def execute(self, *args):
+        if hasattr(self.custom_class, "instantiated"):
+            pass
+        else:
+            self.custom_class = self.custom_class()
+
+        # print(f"Executing node: {self.name}")
+        # input_values = [node.output for node in self.inputs]
+        if len(args) > 0:
+            self.custom_class.run(*args)
+        else:
+            self.custom_class.run()
 
 
 class Graph:
@@ -88,7 +95,6 @@ class Graph:
                                 graph_node = Node(node, node_class)
                                 self.add_node(node_key, graph_node)
                             else:
-                                print("Update node properties here if needed")
                                 self.nodes[node_key].setup(node)
 
                             break  # No need to check further once match is found
@@ -103,12 +109,16 @@ class Graph:
                     del self.nodes[node_key]
 
                 # print(self.nodes)
-                for node in self.nodes.values():
-                    print(f"Order: {node.order} Inputs: {node.inputs} Outputs: {node.outputs}")
-                    if node.inputs is None:
-                        continue
-                    for input in node.inputs:
-                        connection = self.search_nodes_for_output(input['link'])
+                for key, node in sorted(self.nodes.items(), key=lambda item: item[1].order):
+                    previous_node_inputs = []
+                    # print(f"Order: {node.order} Inputs: {node.inputs} Outputs: {node.outputs}")
+                    if node.inputs is not None:
+                        for input in node.inputs:
+                            previous_node_inputs.append(self.search_nodes_for_output(input['link']))
+                    if len(previous_node_inputs) == 0:
+                        node.execute()
+                    else:
+                        node.execute(*previous_node_inputs)
                 self.node_queue.task_done()
 
         except asyncio.CancelledError:
@@ -121,8 +131,9 @@ class Graph:
                     continue
                 for output_link in output_links['links']:
                     if output_link == link:
-                        print(f"Slot Index: {output_links['slot_index']}")
-                        return node
+                        # print(f"Slot Index: {output_links['slot_index']}")
+                        # print(node.custom_class.output_results)
+                        return node.custom_class.output_results[output_links['slot_index']]
         return None
 
 async def custom_nodes_handler(request):
