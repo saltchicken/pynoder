@@ -28,7 +28,17 @@ function main() {
       const data = localStorage.getItem("myGraph");
       if (data) {
           graph.configure(JSON.parse(data));
-          console.log("Graph loaded:", data);
+          // console.log("Graph loaded:", JSON.stringify(JSON.parse(data), null, 2));
+        JSON.parse(data).nodes.forEach(node => {
+          console.log(`Node ID: ${node.id}, Type: ${node.type}, Title: ${node.title}`);
+          console.log("  Inputs:", node.inputs);
+          console.log("  Outputs:", node.outputs);
+          console.log("  Properties:", node.properties);
+          console.log("------------------------");
+        });
+
+
+
       } else {
           console.log("No saved graph found.");
       }
