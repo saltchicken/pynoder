@@ -21,19 +21,22 @@ custom_classes = [
 
 class Node:
     def __init__(self, node, custom_class):
+        self.setup(node)
+        self.custom_class = custom_class
+        
+    def setup(self, node):
         self.id = node.get('id', None)
         self.unique_id = node['properties'].get('uniqueID', None)
         self.name = node.get('type', None)
         self.flags = node.get('flags', None)
         self.mode = node.get('mode', None)
         self.order = node.get('order', None)
-        # self.inputs = node.get('inputs', None)
+        self.inputs = node.get('inputs', None)
         self.outputs = node.get('outputs', None)
         self.properties = node.get('properties', None)
-        self.custom_class = custom_class
 
-        self.inputs = []
-        self.output = None
+        # self.inputs = []
+        # self.output = None
         # self.func = node.process
 
     def execute(self):
@@ -53,8 +56,8 @@ class Graph:
         self.process_task = asyncio.create_task(self.process_nodes())
         return self.process_task
 
-    def add_node(self, node_class):
-        self.nodes[str(node_class.id) + ":" + node_class.unique_id] = node_class
+    def add_node(self, node_key, graph_node):
+        self.nodes[node_key] = graph_node
 
     def connection(self, from_node, to_node):
         self.nodes[to_node].inputs.append(self.nodes[from_node])
@@ -83,7 +86,11 @@ class Graph:
 
                             if node_key not in self.nodes:
                                 graph_node = Node(node, node_class)
-                                self.add_node(graph_node)
+                                self.add_node(node_key, graph_node)
+                            else:
+                                print("Update node properties here if needed")
+                                self.nodes[node_key].setup(node)
+
                             break  # No need to check further once match is found
 
                 # Identify nodes that should be deleted
@@ -96,6 +103,8 @@ class Graph:
                     del self.nodes[node_key]
 
                 print(self.nodes)
+                for node in self.nodes.values():
+                    print(node.inputs)
                 self.node_queue.task_done()
 
         except asyncio.CancelledError:
