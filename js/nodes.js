@@ -41,6 +41,81 @@ async function registerNode(node) {
 
 }
 
+async function registerSendText() {
+  function sendTextNode() {
+  this.addOutput("Text", "string");
+  this.properties = { text: "Hello World" };
+  this.setOutputData(0, this.properties.text);
+  this.setDirtyCanvas(true, true);
+  this.size = [200, 200];
+  this.onDrawBackground = function(ctx) {
+    ctx.fillStyle = "#444";
+    ctx.fillRect(0, 0, this.size[0], this.size[1]);
+    ctx.fillStyle = "#eee";
+    ctx.font = "14px Arial";
+    ctx.fillText(this.properties.text, 5, 20);
+  };
+  this.onPropertyChanged = function(name, value) {
+    this.setOutputData(0, value);
+    this.setDirtyCanvas(true, true);
+  };
+}
+
+  console.log("Registering node: send text node manually" )
+LiteGraph.registerNodeType("SendText", sendTextNode);
+}
+
+registerSendText();
+
+async function registerShowText() {
+  function showTextNode() {
+    this.addInput("Text", "string");
+    this.size = [200, 200];
+    this.addWidget("text", "Label:", "My custom text");
+    this.onExecute = function() {
+      this.widgets[0].value = this.getInputData(0);
+      console.log("Executing show text node")
+    };
+//     this.onAdded = function() {
+//       console.log("I was addedkasjd;lfjka;sldkjf;alskdj;flkajs;df")
+//     };
+//     this.onExecute = function() {
+//     if (!this.textarea) {
+//         var textarea = document.createElement("textarea");
+//         textarea.style.position = "absolute";
+//         textarea.style.left = this.pos[0] + "px";
+//         textarea.style.top = this.pos[1] + "px";
+//         textarea.style.width = "150px";
+//         textarea.style.height = "60px";
+//         textarea.style.background = "black";
+//         textarea.style.color = "white";
+//         textarea.style.border = "1px solid white";
+//         textarea.style.zIndex = 10;
+//         document.body.appendChild(textarea);
+//
+//         this.textarea = textarea;
+//
+//         textarea.addEventListener("input", () => {
+//             this.properties.text = textarea.value;
+//         });
+//     }
+// };
+
+
+    this.onDrawBackground = function(ctx) {
+      ctx.fillStyle = "#444";
+      ctx.fillRect(0, 0, this.size[0], this.size[1]);
+      ctx.fillStyle = "#eee";
+      ctx.font = "60px Arial";
+      ctx.fillText(this.getInputData(0), 5, 20);
+    };
+  }
+
+  console.log("Registering node: show text node manually" )
+  LiteGraph.registerNodeType("ShowText", showTextNode);
+}
+registerShowText();
+
 async function getCustomNodes() {
     let response = await fetch('/custom_nodes', {
         method: "POST",
