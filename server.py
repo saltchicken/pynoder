@@ -58,6 +58,7 @@ class Graph:
         self.nodes = {}
         self.node_queue = asyncio.Queue()
         self.process_task = None
+        self.sse_queue = asyncio.Queue()
         
     async def start_processing(self):
         self.process_task = asyncio.create_task(self.process_nodes())
@@ -115,6 +116,8 @@ class Graph:
                     if node.inputs is not None:
                         for input in node.inputs:
                             previous_node_inputs.append(self.search_nodes_for_output(input['link']))
+                    # self.sse_queue.put_nowait(json.dumps({"node": node.name, "key": str(node.id) + ":" + node.unique_id}))
+                    self.sse_queue.put_nowait(json.dumps({"node": node.name, "key": str(node.id)}))
                     if len(previous_node_inputs) == 0:
                         node.execute()
                     else:
@@ -136,6 +139,37 @@ class Graph:
                         return node.custom_class.output_results[output_links['slot_index']]
         return None
 
+
+    async def sse_handler(self,request):
+        response = web.StreamResponse(
+            status=200,
+            reason="OK",
+            headers={
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            },
+        )
+
+        await response.prepare(request)
+
+        try:
+            while True:
+                message = await self.sse_queue.get()
+                formatted_message = f"data: {message}\n\n"
+                await response.write(formatted_message.encode("utf-8"))
+        except (asyncio.CancelledError, ConnectionResetError, web.GracefulExit):
+            print("Client disconnected")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+        finally:
+            try:
+                await response.write_eof()  # Ensure the response is properly closed
+            except Exception:
+                pass  # Ignore errors when closing the response
+
+        return response
+
 async def custom_nodes_handler(request):
     """Handles POST requests for custom nodes."""
     # data = await request.json()
@@ -146,37 +180,6 @@ async def custom_nodes_handler(request):
     custom_classes_without_class = [{k: v for k, v in d.items() if k != 'class'} for d in custom_classes]
     return web.json_response({"status": "success", "nodes": custom_classes_without_class})
 
-async def sse_handler(request):
-    response = web.StreamResponse(
-        status=200,
-        reason="OK",
-        headers={
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-        },
-    )
-
-    await response.prepare(request)
-
-    try:
-        counter = 0
-        while True:
-            counter += 1
-            message = f"data: Message {counter} from server\n\n"
-            await response.write(message.encode("utf-8"))
-            await asyncio.sleep(10)  # Send an update every second
-    except (asyncio.CancelledError, ConnectionResetError, web.GracefulExit):
-        print("Client disconnected")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-    finally:
-        try:
-            await response.write_eof()  # Ensure the response is properly closed
-        except Exception:
-            pass  # Ignore errors when closing the response
-
-    return response
 
 async def start_background_tasks(app):
     app['process_task'] = await graph.start_processing()
@@ -184,7 +187,7 @@ async def start_background_tasks(app):
 
 graph = Graph()
 app = web.Application()
-app.router.add_get('/events', sse_handler)
+app.router.add_get('/events', graph.sse_handler)
 app.router.add_post('/process_graph', graph.process_graph)
 app.router.add_post('/custom_nodes', custom_nodes_handler)
 app.router.add_static('/', path='.', show_index=True)  # Serve frontend files
