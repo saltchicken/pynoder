@@ -67,10 +67,6 @@ class Graph:
     def add_node(self, node_key, graph_node):
         self.nodes[node_key] = graph_node
 
-    def connection(self, from_node, to_node):
-        self.nodes[to_node].inputs.append(self.nodes[from_node])
-
-
     async def process_graph(self, request):
         """Handles POST requests from the frontend with graph data."""
         data = await request.json()
